@@ -8,11 +8,15 @@
 #include "dns_protocol.h"
 #include "dns_encode.h"
 
-void erro_fatal(const char * msg) {
 #ifdef DEBUG
-    fprintf(stderr, " ERRO: %s\n", msg);
+#	define DPRINT(x) fprintf(stderr, " [DEBUG] %s\n", x);
+#else
+#	define DPRINT(x)
 #endif
-    exit(EXIT_FAILURE);
+
+void erro_fatal(const char * msg) {
+	DPRINT(msg)
+	exit(EXIT_FAILURE);
 }
 
 int main(void)
