@@ -1,2 +1,2 @@
 # SimpleDNSClient
-A simple DNS Client...
+A simple DNS Client.
