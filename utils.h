@@ -5,4 +5,9 @@
 extern void erro_fatal(const char *);
 extern void usage(const char *);
 
+struct dns_response {
+	u_char *dns_reply;
+	size_t dns_reply_bytes;
+};
+
 #endif

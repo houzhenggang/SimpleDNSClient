@@ -1,7 +1,13 @@
 #include <sys/types.h>
 
+enum dns_query_type {
+	DNS_A_RECORD = 0x01,
+	DNS_CNAME_RECORD = 0x05,
+	DNS_MX_RECORD = 0x0f
+};
+
 /*
- * Members inverted for big-endian adequation 
+ * Members of bit-fields inverted for big-endian adequation 
  * Only *little endian* architectures
 */
 struct dns_header {
@@ -47,14 +53,8 @@ struct dns_header {
 */
 
 struct dns_question {
-	u_int16_t qclass;
 	u_int16_t qtype;
-};
-
-struct dns_packet {
-	struct dns_header header;
-	char *data;
-	u_int16_t data_size;
+	u_int16_t qclass;
 };
 
 struct dns_response_packet {
@@ -64,4 +64,10 @@ struct dns_response_packet {
 	u_int32_t ttl;
 	u_int16_t rdlength;
 	char *rdata;
+};
+
+struct dns_packet {
+	struct dns_header header;
+	char *data;
+	u_int16_t data_size;
 };

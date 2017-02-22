@@ -10,8 +10,7 @@
 #include "dns_encode.h"
 #include "utils.h"
 
-char *
-send_dns_query(const char *fqdn, in_addr_t ipv4)
+struct dns_response send_dns_query(const char *fqdn, in_addr_t ipv4)
 {
 	char buffer[1024];
 	int fd_sock;
@@ -28,6 +27,8 @@ send_dns_query(const char *fqdn, in_addr_t ipv4)
 
 	struct dns_header *dns_header;
 	struct dns_question *dns_question;
+
+	struct dns_response dns_response;
 
 	struct sockaddr_in dns_server;
 	struct sockaddr_in remote_socket;
@@ -81,38 +82,52 @@ send_dns_query(const char *fqdn, in_addr_t ipv4)
 	close(fd_sock);
 	free(dns_consult);
 
-	return dns_reply;
+	dns_response.dns_reply = dns_reply;
+	dns_response.dns_reply_bytes = bytes_rx;
+
+	return dns_response;
 }
 
-void
-read_reply_dns(const char *dns_reply)
+void read_reply_dns(const u_char *dns_reply, size_t dns_reply_size)
 {
-	struct dns_header *dns_header;
+	const struct dns_header *dns_header = NULL;
+	struct dns_question *dns_question;
+	const u_char *p = NULL;
+	const u_char *ipv4 = NULL;
+
 	dns_header = (struct dns_header *) dns_reply;
-/*
-	printf(" dns_reply->qdcount = %d\n", ntohs(dns_header->qdcount));
-	printf(" dns_reply->ancount = %d\n", ntohs(dns_header->ancount));
-	printf(" dns_reply->nscount = %d\n", ntohs(dns_header->nscount));
-	printf(" dns_reply->arcount = %d\n", ntohs(dns_header->arcount));
-*/
-	if (!(ntohs(dns_header->ancount))) {
-		puts(" Sem resposta!");
+
+	if ((ntohs(dns_header->qdcount)) != 1) {
 		return;
 	}
 
+	if (!(ntohs(dns_header->ancount))) {
+		puts(" Host not found!");
+		return;
+	}
+
+	p = dns_reply + sizeof(struct dns_header);
+
+	for (; *p != '\0'; p++);
+
+	p += 1;
+	if (p[1] == DNS_A_RECORD) {
+		ipv4 = p + 16;
+		printf(" IP: %d.%d.%d.%d\n", *ipv4, *(ipv4+1), *(ipv4+2), *(ipv4+3));
+	}
 }
 
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
 	char *fqdn;
 	char *ipv4;
-	char *dns_reply;
 
 	int c;
 
 	fqdn = NULL;
 	ipv4 = NULL;
+
+	struct dns_response dns_response;
 
 	opterr	= 0;
 	while ((c = getopt(argc, argv, "d:s:h")) != -1) {
@@ -139,10 +154,10 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	dns_reply = send_dns_query(fqdn, inet_addr(ipv4));
-	read_reply_dns(dns_reply);
+	dns_response = send_dns_query(fqdn, inet_addr(ipv4));
+	read_reply_dns(dns_response.dns_reply, dns_response.dns_reply_bytes);
 
-	free(dns_reply);
+	free(dns_response.dns_reply);
 	return 0;
 }
 
